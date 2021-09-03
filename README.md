@@ -1,18 +1,12 @@
 # mnist_example
 
-MNIST training on different image size and Train-test splits
+### Training
+![training digits][img]
 
-16x16 --> 0.1 --> 96.67 --> 0.97
-16x16 --> 0.2 --> 95.28 --> 0.95
-16x16 --> 0.3 --> 96.48 --> 0.96
-16x16 --> 0.4 --> 96.24 --> 0.96
+[img]: /mnist_example/images/Figure_1.png "Training digits"
+### Prediction
+![prediction digits](/mnist_example/images/Figure_2.png "Prediction digits")
 
-32x32 --> 0.1 --> 86.67 --> 0.87
-32x32 --> 0.2 --> 85.83 --> 0.86
-32x32 --> 0.3 --> 83.15 --> 0.83
-32x32 --> 0.4 --> 84.42 --> 0.84
 
-64x64 --> 0.1 --> 16.67 --> 0.17
-64x64 --> 0.2 --> 22.50 --> 0.23
-64x64 --> 0.3 --> 13.89 --> 0.14
-64x64 --> 0.4 --> 14.46 --> 0.14
+### Confusion Matrix
+![Confusion matrix](/mnist_example/images/Figure_3.png "Confusion matrix")
