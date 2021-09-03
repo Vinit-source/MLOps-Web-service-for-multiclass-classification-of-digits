@@ -3,10 +3,10 @@
 ### Training
 ![training digits][img]
 
-[img]: /mnist_example/images/Figure_1.png "Training digits"
+[img]: /images/Figure_1.png "Training digits"
 ### Prediction
-![prediction digits](/mnist_example/images/Figure_2.png "Prediction digits")
+![prediction digits](/images/Figure_2.png "Prediction digits")
 
 
 ### Confusion Matrix
-![Confusion matrix](/mnist_example/images/Figure_3.png "Confusion matrix")
+![Confusion matrix](/images/Figure_3.png "Confusion matrix")
