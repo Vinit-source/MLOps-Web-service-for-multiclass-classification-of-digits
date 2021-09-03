@@ -1,12 +1,17 @@
 # mnist_example
 
-### Training
-![training digits][img]
+## Paramter Tuning
 
-[img]: /images/Figure_1.png "Training digits"
-### Prediction
-![prediction digits](/images/Figure_2.png "Prediction digits")
-
-
-### Confusion Matrix
-![Confusion matrix](/images/Figure_3.png "Confusion matrix")
+| Gamma | Accuracy | F1-score (micro)
+| ----- | :------: | ---------------: |
+1e-07 | 10.12 | 0.10
+1e-06 | 10.12 | 0.10
+1e-05 | 79.76 | 0.80
+0.0001 | 93.99 | 0.94
+0.001 | 96.89 | 0.97
+0.01 |  69.74 | 0.70
+0.1 |   10.12 | 0.10
+1 |     10.12 | 0.10
+10 |    10.12 | 0.10
+100 |   10.12 | 0.10
+1000 |  10.12 | 0.10
