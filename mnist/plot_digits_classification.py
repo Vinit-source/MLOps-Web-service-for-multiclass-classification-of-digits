@@ -9,17 +9,11 @@ hand-written digits, from 0-9.
 
 print(__doc__)
 
-# Author: Gael Varoquaux <gael dot varoquaux at normalesup dot org>
-# License: BSD 3 clause
-
-# Standard scientific Python imports
-import matplotlib.pyplot as plt
-
 # Import datasets, classifiers and performance metrics
 from sklearn import datasets, svm, metrics
 from sklearn.model_selection import train_test_split
-from skimage import data, color
-from skimage.transform import rescale, resize, downscale_local_mean
+from skimage import data
+from skimage.transform import resize
 import numpy as np
 
 
@@ -38,14 +32,8 @@ import numpy as np
 # them using :func:`matplotlib.pyplot.imread`.
 
 digits = datasets.load_digits()
-
+print(f"Original Image size: {digits.images[0].shape}")
 for size in [16, 32, 64]:
-    # _, axes = plt.subplots(nrows=1, ncols=4, figsize=(10, 9))
-    # for ax, image, label in zip(axes, digits.images, digits.target):
-    #     ax.set_axis_off()
-    #     image = resize(image, (size, size))
-    #     ax.imshow(image, cmap=plt.cm.gray_r, interpolation='nearest')
-    #     ax.set_title('Training: %i' % label)
 
     ###############################################################################
     # Classification
@@ -64,7 +52,6 @@ for size in [16, 32, 64]:
 
     # flatten the images
     n_samples = len(digits.images)
-    # print(type(digits.images))
     digits.images = np.array([resize(image, (size, size)) for image in digits.images])
     data = digits.images.reshape((n_samples, -1))
 
@@ -86,34 +73,10 @@ for size in [16, 32, 64]:
         # Below we visualize the first 4 test samples and show their predicted
         # digit value in the title.
 
-        # _, axes = plt.subplots(nrows=1, ncols=4, figsize=(10,3))
-        # for ax, image, prediction in zip(axes, X_test, predicted):
-        #     ax.set_axis_off()
-        #     # print(image.shape)
-        #     image = image.reshape(size,size)
-        #     # image = resize(image, (size, size))
-        #     # image = image.reshape(8, 8)
-        #     ax.imshow(image, cmap=plt.cm.gray_r, interpolation='nearest')
-        #     # ax.set_title(f'Prediction: {prediction}')
-
     ###############################################################################
-    # :func:`~sklearn.metrics.classification_report` builds a text report showing
-    # the main classification metrics.
-
-        # print(f"Classification report for classifier {clf}:\n"
-        #     f"{metrics.classification_report(y_test, predicted)}\n")
-
         acc = metrics.accuracy_score(y_test, predicted, normalize=True)
         f1 = metrics.f1_score(y_test, predicted, average="micro")
-        print(f"{size}x{size} --> {split} --> {acc*100:.2f} --> {f1:.2f}")
+        print(f"{size}x{size}\t\t{split}\t\t{acc*100:.2f}\t\t{f1:.2f}")
 
         ###############################################################################
-        # We can also plot a :ref:`confusion matrix <confusion_matrix>` of the
-        # true digit values and the predicted digit values.
-
-        # disp = metrics.plot_confusion_matrix(clf, X_test, y_test)
-        # disp.figure_.suptitle("Confusion Matrix")
-        # print(f"Confusion matrix:\n{disp.confusion_matrix}")
     print()
-
-# plt.show()
