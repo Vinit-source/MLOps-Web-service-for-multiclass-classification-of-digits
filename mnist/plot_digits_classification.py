@@ -13,14 +13,16 @@ print(__doc__)
 # License: BSD 3 clause
 
 # Standard scientific Python imports
-# from os import access
+import os
+from os import path as osp
 # import matplotlib.pyplot as plt
-import pickle
+# import pickle
 from numpy.lib.npyio import save
-
+from joblib import dump, load
+from utils import preprocess, create_split, create_model_and_train, test
 # Import datasets, classifiers and performance metrics
-from sklearn import datasets, svm, metrics
-from sklearn.model_selection import train_test_split
+from sklearn import datasets
+import pandas as pd
 
 ###############################################################################
 # Digits dataset
@@ -53,56 +55,79 @@ digits = datasets.load_digits()
 # subsequently be used to predict the value of the digit for the samples
 # in the test subset.
 
-# flatten the images
-n_samples = len(digits.images)
-data = digits.images.reshape((n_samples, -1))
+out = pd.DataFrame(columns=["Val-Test-Split-Ratios", "Rescale Factor", "F1-Validation", "Test Accuracy", "Optimal Gamma"])
+for val_test_ratio in [(0.15, 0.15), (0.15, 0.30), (0.25, 0.25), (0.3, 0.3), (0.2, 0.4)]:
+    for rescale_factor in [0.25, 0.5, 1, 1.5, 2, 2.5]:
+# for val_test_ratio in [(0.15, 0.15)]:
+#     for rescale_factor in [1]:
+        # print()
+        # print("="*100)
+        # print(f"Processing for Val-test ratio {val_test_ratio}, rescale {rescale_factor}")
+        # print("="*100)
+        # preprocess data
+        X, y = preprocess(digits, rescale_factor=rescale_factor)
 
-# print(f"Gamma\t\tAccuracy\tF1-score (micro)")
-# Split data into 70 % train and 30 % held-out 
-X_train, X_rem, y_train, y_rem = train_test_split(
-    data, digits.target, test_size=0.3, shuffle=False)
-# Split held-out data into 50% train and 50% test subsets
-X_val, X_test, y_val, y_test = train_test_split(
-    X_rem, y_rem, test_size=0.5, shuffle=False)
+        # split into train, val and test subsets
+        X_train, X_val, X_test, y_train, y_val, y_test = create_split(X, y, val_test_ratio=val_test_ratio)
 
-# Create a classifier: a support vector classifier
-max_f1 = 0
-candidates = []
-for gamma in (10**exp for exp in range(-7,4)):
-    clf = svm.SVC(gamma=gamma)
+        #!TODO: Convert into command-line program using argparse
+        # Create a classifier: a support vector classifier
+        max_f1 = 0
+        candidates = []
+        for gamma in (10**exp for exp in range(-7,4)):
 
-    # Learn the digits on the train subset
-    clf.fit(X_train, y_train)
+            clf = create_model_and_train(X_train, y_train, gamma)
 
-    # Predict the value of the digit on the validation subset
-    # predicted_train = clf.predict(X_train)
-    predicted_val = clf.predict(X_val)
+            # Predict the value of the digit on the validation subset
+            metrcs = test(clf, X_val, y_val)
+            
+            # skip irrelevant models on the basis of f1 score
+            if max_f1 >= metrcs["f1"]:
+                # print(f"Skipping for gamma = {gamma}")
+                continue
 
-    # acctrain = metrics.accuracy_score(y_train, predicted_train, normalize=True)
-    accval = metrics.accuracy_score(y_val, predicted_val, normalize=True)
-    f1val = metrics.f1_score(
-        y_true=y_val, y_pred = predicted_val, average="macro"
-        )
-    # print(f"Gamma = {gamma}, Train : Val = {acctrain} : {accval}")
+            # save values of relevant models on the basis of f1 score
+            candidate = {
+                "accval":metrcs["acc"],
+                "f1_valid": metrcs["f1"],
+                "gamma": gamma
+            }
+            candidates.append(candidate)
+            max_f1 = metrcs["f1"] if max_f1 < metrcs["f1"] else max_f1
 
-    if max_f1 > f1val:
-        print(f"Skipping for gamma = {gamma}")
-        continue
-    candidate = {
-        "model":clf,
-        "accval":accval,
-        "f1_valid": f1val,
-        "gamma": gamma
-    }
-    candidates.append(candidate)
-    max_f1 = f1val if max_f1 < f1val else max_f1
-        # saved_model = pickle.dumps(clf)
+            # store model to disk
+            output_folder = osp.abspath("models/tt_{}_val_{}_rescale_{}_gamma_{}".format(
+                val_test_ratio[1], val_test_ratio[0], rescale_factor, gamma
+            ))
+            os.mkdir(output_folder) if not osp.exists(output_folder) else None
+            # with open(osp.join(output_folder, "model.pkl"), 'wb') as fp:
+            #     pickle.dump(candidate, fp)
+            dump(clf, osp.join(output_folder, "model.joblib"))
 
-max_valid_f1_model = max(candidates, key = lambda x: x["f1_valid"])
-print(f"Optimal Gamma value: {max_valid_f1_model['gamma']}, on validation subset, \
-    F1 score: {max_valid_f1_model['f1_valid']}, accuracy: {max_valid_f1_model['accval']}")
-# clf = pickle.loads(saved_model)
-clf = max_valid_f1_model["model"]
-predicted_test = clf.predict(X_test)
-acctest = metrics.accuracy_score(y_test, predicted_test, normalize=True)
-print(f"Test accuracy: {acctest}")
+        # select best candidate model on the basis of f1 score on validation
+        max_valid_f1_model = max(candidates, key = lambda x: x["f1_valid"])
+        gamma = max_valid_f1_model["gamma"]
+
+        # load model from disk
+        best_model_folder = osp.abspath("models/tt_{}_val_{}_rescale_{}_gamma_{}".format(
+                val_test_ratio[1], val_test_ratio[0], rescale_factor, gamma
+            ))
+        clf = load(osp.join(best_model_folder, "model.joblib"))
+
+        # print optimal gamma and metrics
+        # print(f"Optimal Gamma value: {max_valid_f1_model['gamma']}, on validation subset, \
+        #     F1 score: {max_valid_f1_model['f1_valid']}, accuracy: {max_valid_f1_model['accval']}")
+        # clf = pickle.loads(saved_model)
+
+        # infer on test dataset
+        results = test(model=clf, X_test=X_test, y_true=y_test)
+        print(f"Val-test ratio {val_test_ratio}, rescale {rescale_factor}: Test acc: {results['acc']}")
+        other = pd.DataFrame({
+            "Val-Test-Split-Ratios": f"{val_test_ratio[0]}, {val_test_ratio[1]}",
+            "Rescale Factor": rescale_factor,
+            "F1-Validation": max_valid_f1_model['f1_valid'], 
+            "Test Accuracy": results['acc'], 
+            "Optimal Gamma": gamma
+            }, index=[0])
+        out = out.append(other, ignore_index=True)
+print(out.to_markdown())
