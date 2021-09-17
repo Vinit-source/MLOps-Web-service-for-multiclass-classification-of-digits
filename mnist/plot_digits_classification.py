@@ -13,6 +13,7 @@ print(__doc__)
 # License: BSD 3 clause
 
 # Standard scientific Python imports
+from os import access
 import matplotlib.pyplot as plt
 
 # Import datasets, classifiers and performance metrics
@@ -35,12 +36,6 @@ from sklearn.model_selection import train_test_split
 
 digits = datasets.load_digits()
 
-_, axes = plt.subplots(nrows=1, ncols=4, figsize=(10, 3))
-for ax, image, label in zip(axes, digits.images, digits.target):
-    ax.set_axis_off()
-    ax.imshow(image, cmap=plt.cm.gray_r, interpolation='nearest')
-    ax.set_title('Training: %i' % label)
-
 ###############################################################################
 # Classification
 # --------------
@@ -60,49 +55,33 @@ for ax, image, label in zip(axes, digits.images, digits.target):
 n_samples = len(digits.images)
 data = digits.images.reshape((n_samples, -1))
 
-print(f"Gamma\t\tAccuracy\tF1-score (micro)")
+# print(f"Gamma\t\tAccuracy\tF1-score (micro)")
 # Create a classifier: a support vector classifier
+max_acc = 0
 for gamma in (10**exp for exp in range(-7,4)):
     clf = svm.SVC(gamma=gamma)
 
     # Split data into 50% train and 50% test subsets
-    X_train, X_test, y_train, y_test = train_test_split(
-        data, digits.target, test_size=0.5, shuffle=False)
-
+    X_train, X_rem, y_train, y_rem = train_test_split(
+        data, digits.target, test_size=0.3, shuffle=False)
+    X_val, X_test, y_val, y_test = train_test_split(
+        X_rem, y_rem, test_size=0.5, shuffle=False)
     # Learn the digits on the train subset
     clf.fit(X_train, y_train)
 
     # Predict the value of the digit on the test subset
-    predicted = clf.predict(X_test)
+    predicted_train = clf.predict(X_train)
+    predicted_val = clf.predict(X_val)
+    predicted_test = clf.predict(X_test)
+    
+    acctrain = metrics.accuracy_score(y_train, predicted_train, normalize=True)
+    accval = metrics.accuracy_score(y_val, predicted_val, normalize=True)
+    acctest = metrics.accuracy_score(y_test, predicted_test, normalize=True)
+    print(f"Gamma = {gamma}, Train : Val : Test = {acctrain} : {accval} : {acctest}")
 
-    ###############################################################################
-    # Below we visualize the first 4 test samples and show their predicted
-    # digit value in the title.
+    if max_acc < accval:
+        max_acc = accval
+        optimal_gamma = gamma
+        optimal_accs = (acctrain, accval, acctest)
 
-    _, axes = plt.subplots(nrows=1, ncols=4, figsize=(10, 3))
-    for ax, image, prediction in zip(axes, X_test, predicted):
-        ax.set_axis_off()
-        image = image.reshape(8, 8)
-        ax.imshow(image, cmap=plt.cm.gray_r, interpolation='nearest')
-        ax.set_title(f'Prediction: {prediction}')
-
-    ###############################################################################
-    # :func:`~sklearn.metrics.classification_report` builds a text report showing
-    # the main classification metrics.
-
-    # print(f"Classification report for classifier {clf}:\n"
-    #       f"{metrics.classification_report(y_test, predicted)}\n")
-
-    # ###############################################################################
-    # # We can also plot a :ref:`confusion matrix <confusion_matrix>` of the
-    # # true digit values and the predicted digit values.
-
-    # disp = metrics.plot_confusion_matrix(clf, X_test, y_test)
-    # disp.figure_.suptitle("Confusion Matrix")
-    # print(f"Confusion matrix:\n{disp.confusion_matrix}")
-
-    acc = metrics.accuracy_score(y_test, predicted, normalize=True)
-    f1 = metrics.f1_score(y_test, predicted, average="micro")
-    print(f"{gamma}\t\t{acc*100:.2f}\t\t{f1:.2f}")
-
-plt.show()
+print(f"Optimal Gamma value: {optimal_gamma:.2f}, Train : Val : Test = {optimal_accs[0]} : {optimal_accs[1]} : {optimal_accs[2]}")
