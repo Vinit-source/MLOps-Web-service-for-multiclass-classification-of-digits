@@ -1,4 +1,5 @@
 # mnist_example
+
 # Assigment 4: Metrics as function of Hyperparameters
 ## Hyperparamter Tuning
 |    | Val-Test-Split-Ratios   |   Rescale Factor |   F1-Validation |   Test Accuracy |   Optimal Gamma |
