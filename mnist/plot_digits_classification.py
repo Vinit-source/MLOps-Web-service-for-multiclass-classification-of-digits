@@ -13,8 +13,10 @@ print(__doc__)
 # License: BSD 3 clause
 
 # Standard scientific Python imports
-from os import access
-import matplotlib.pyplot as plt
+# from os import access
+# import matplotlib.pyplot as plt
+import pickle
+from numpy.lib.npyio import save
 
 # Import datasets, classifiers and performance metrics
 from sklearn import datasets, svm, metrics
@@ -56,32 +58,51 @@ n_samples = len(digits.images)
 data = digits.images.reshape((n_samples, -1))
 
 # print(f"Gamma\t\tAccuracy\tF1-score (micro)")
+# Split data into 70 % train and 30 % held-out 
+X_train, X_rem, y_train, y_rem = train_test_split(
+    data, digits.target, test_size=0.3, shuffle=False)
+# Split held-out data into 50% train and 50% test subsets
+X_val, X_test, y_val, y_test = train_test_split(
+    X_rem, y_rem, test_size=0.5, shuffle=False)
+
 # Create a classifier: a support vector classifier
-max_acc = 0
+max_f1 = 0
+candidates = []
 for gamma in (10**exp for exp in range(-7,4)):
     clf = svm.SVC(gamma=gamma)
 
-    # Split data into 50% train and 50% test subsets
-    X_train, X_rem, y_train, y_rem = train_test_split(
-        data, digits.target, test_size=0.3, shuffle=False)
-    X_val, X_test, y_val, y_test = train_test_split(
-        X_rem, y_rem, test_size=0.5, shuffle=False)
     # Learn the digits on the train subset
     clf.fit(X_train, y_train)
 
-    # Predict the value of the digit on the test subset
-    predicted_train = clf.predict(X_train)
+    # Predict the value of the digit on the validation subset
+    # predicted_train = clf.predict(X_train)
     predicted_val = clf.predict(X_val)
-    predicted_test = clf.predict(X_test)
-    
-    acctrain = metrics.accuracy_score(y_train, predicted_train, normalize=True)
+
+    # acctrain = metrics.accuracy_score(y_train, predicted_train, normalize=True)
     accval = metrics.accuracy_score(y_val, predicted_val, normalize=True)
-    acctest = metrics.accuracy_score(y_test, predicted_test, normalize=True)
-    print(f"Gamma = {gamma}, Train : Val : Test = {acctrain} : {accval} : {acctest}")
+    f1val = metrics.f1_score(
+        y_true=y_val, y_pred = predicted_val, average="macro"
+        )
+    # print(f"Gamma = {gamma}, Train : Val = {acctrain} : {accval}")
 
-    if max_acc < accval:
-        max_acc = accval
-        optimal_gamma = gamma
-        optimal_accs = (acctrain, accval, acctest)
+    if max_f1 > f1val:
+        print(f"Skipping for gamma = {gamma}")
+        continue
+    candidate = {
+        "model":clf,
+        "accval":accval,
+        "f1_valid": f1val,
+        "gamma": gamma
+    }
+    candidates.append(candidate)
+    max_f1 = f1val if max_f1 < f1val else max_f1
+        # saved_model = pickle.dumps(clf)
 
-print(f"Optimal Gamma value: {optimal_gamma:.2f}, Train : Val : Test = {optimal_accs[0]} : {optimal_accs[1]} : {optimal_accs[2]}")
+max_valid_f1_model = max(candidates, key = lambda x: x["f1_valid"])
+print(f"Optimal Gamma value: {max_valid_f1_model['gamma']}, on validation subset, \
+    F1 score: {max_valid_f1_model['f1_valid']}, accuracy: {max_valid_f1_model['accval']}")
+# clf = pickle.loads(saved_model)
+clf = max_valid_f1_model["model"]
+predicted_test = clf.predict(X_test)
+acctest = metrics.accuracy_score(y_test, predicted_test, normalize=True)
+print(f"Test accuracy: {acctest}")
