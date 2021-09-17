@@ -9,12 +9,21 @@ hand-written digits, from 0-9.
 
 print(__doc__)
 
+
+# Author: Gael Varoquaux <gael dot varoquaux at normalesup dot org>
+# License: BSD 3 clause
+
+# Standard scientific Python imports
+import os
+from os import path as osp
+# import matplotlib.pyplot as plt
+# import pickle
+from numpy.lib.npyio import save
+from joblib import dump, load
+from utils import preprocess, create_split, create_model_and_train, test
 # Import datasets, classifiers and performance metrics
-from sklearn import datasets, svm, metrics
-from sklearn.model_selection import train_test_split
-from skimage import data
-from skimage.transform import resize
-import numpy as np
+from sklearn import datasets
+import pandas as pd
 
 
 ###############################################################################
@@ -32,51 +41,95 @@ import numpy as np
 # them using :func:`matplotlib.pyplot.imread`.
 
 digits = datasets.load_digits()
-print(f"Original Image size: {digits.images[0].shape}")
-for size in [16, 32, 64]:
 
-    ###############################################################################
-    # Classification
-    # --------------
-    #
-    # To apply a classifier on this data, we need to flatten the images, turning
-    # each 2-D array of grayscale values from shape ``(8, 8)`` into shape
-    # ``(64,)``. Subsequently, the entire dataset will be of shape
-    # ``(n_samples, n_features)``, where ``n_samples`` is the number of images and
-    # ``n_features`` is the total number of pixels in each image.
-    #
-    # We can then split the data into train and test subsets and fit a support
-    # vector classifier on the train samples. The fitted classifier can
-    # subsequently be used to predict the value of the digit for the samples
-    # in the test subset.
+###############################################################################
+# Classification
+# --------------
+#
+# To apply a classifier on this data, we need to flatten the images, turning
+# each 2-D array of grayscale values from shape ``(8, 8)`` into shape
+# ``(64,)``. Subsequently, the entire dataset will be of shape
+# ``(n_samples, n_features)``, where ``n_samples`` is the number of images and
+# ``n_features`` is the total number of pixels in each image.
+#
+# We can then split the data into train and test subsets and fit a support
+# vector classifier on the train samples. The fitted classifier can
+# subsequently be used to predict the value of the digit for the samples
+# in the test subset.
 
-    # flatten the images
-    n_samples = len(digits.images)
-    digits.images = np.array([resize(image, (size, size)) for image in digits.images])
-    data = digits.images.reshape((n_samples, -1))
+out = pd.DataFrame(columns=["Val-Test-Split-Ratios", "Rescale Factor", "F1-Validation", "Test Accuracy", "Optimal Gamma"])
+for val_test_ratio in [(0.15, 0.15), (0.15, 0.30), (0.25, 0.25), (0.3, 0.3), (0.2, 0.4)]:
+    for rescale_factor in [0.25, 0.5, 1, 1.5, 2, 2.5]:
+# for val_test_ratio in [(0.15, 0.15)]:
+#     for rescale_factor in [1]:
+        # print()
+        # print("="*100)
+        # print(f"Processing for Val-test ratio {val_test_ratio}, rescale {rescale_factor}")
+        # print("="*100)
+        # preprocess data
+        X, y = preprocess(digits, rescale_factor=rescale_factor)
 
-    # Create a classifier: a support vector classifier
-    clf = svm.SVC(gamma=0.001)
+        # split into train, val and test subsets
+        X_train, X_val, X_test, y_train, y_val, y_test = create_split(X, y, val_test_ratio=val_test_ratio)
 
-    # Split data into 50% train and 50% test subsets
-    for split in [0.1, 0.2, 0.3, 0.4]:
-        X_train, X_test, y_train, y_test = train_test_split(
-            data, digits.target, test_size=split, shuffle=False)
+        #!TODO: Convert into command-line program using argparse
+        # Create a classifier: a support vector classifier
+        max_f1 = 0
+        candidates = []
+        for gamma in (10**exp for exp in range(-7,4)):
 
-        # Learn the digits on the train subset
-        clf.fit(X_train, y_train)
+            clf = create_model_and_train(X_train, y_train, gamma)
 
-        # Predict the value of the digit on the test subset
-        predicted = clf.predict(X_test)
+            # Predict the value of the digit on the validation subset
+            metrcs = test(clf, X_val, y_val)
+            
+            # skip irrelevant models on the basis of f1 score
+            if max_f1 >= metrcs["f1"]:
+                # print(f"Skipping for gamma = {gamma}")
+                continue
 
-        ###############################################################################
-        # Below we visualize the first 4 test samples and show their predicted
-        # digit value in the title.
+            # save values of relevant models on the basis of f1 score
+            candidate = {
+                "accval":metrcs["acc"],
+                "f1_valid": metrcs["f1"],
+                "gamma": gamma
+            }
+            candidates.append(candidate)
+            max_f1 = metrcs["f1"] if max_f1 < metrcs["f1"] else max_f1
 
-    ###############################################################################
-        acc = metrics.accuracy_score(y_test, predicted, normalize=True)
-        f1 = metrics.f1_score(y_test, predicted, average="micro")
-        print(f"{size}x{size}\t\t{split}\t\t{acc*100:.2f}\t\t{f1:.2f}")
+            # store model to disk
+            output_folder = osp.abspath("models/tt_{}_val_{}_rescale_{}_gamma_{}".format(
+                val_test_ratio[1], val_test_ratio[0], rescale_factor, gamma
+            ))
+            os.mkdir(output_folder) if not osp.exists(output_folder) else None
+            # with open(osp.join(output_folder, "model.pkl"), 'wb') as fp:
+            #     pickle.dump(candidate, fp)
+            dump(clf, osp.join(output_folder, "model.joblib"))
 
-        ###############################################################################
-    print()
+        # select best candidate model on the basis of f1 score on validation
+        max_valid_f1_model = max(candidates, key = lambda x: x["f1_valid"])
+        gamma = max_valid_f1_model["gamma"]
+
+        # load model from disk
+        best_model_folder = osp.abspath("models/tt_{}_val_{}_rescale_{}_gamma_{}".format(
+                val_test_ratio[1], val_test_ratio[0], rescale_factor, gamma
+            ))
+        clf = load(osp.join(best_model_folder, "model.joblib"))
+
+        # print optimal gamma and metrics
+        # print(f"Optimal Gamma value: {max_valid_f1_model['gamma']}, on validation subset, \
+        #     F1 score: {max_valid_f1_model['f1_valid']}, accuracy: {max_valid_f1_model['accval']}")
+        # clf = pickle.loads(saved_model)
+
+        # infer on test dataset
+        results = test(model=clf, X_test=X_test, y_true=y_test)
+        print(f"Val-test ratio {val_test_ratio}, rescale {rescale_factor}: Test acc: {results['acc']}")
+        other = pd.DataFrame({
+            "Val-Test-Split-Ratios": f"{val_test_ratio[0]}, {val_test_ratio[1]}",
+            "Rescale Factor": rescale_factor,
+            "F1-Validation": max_valid_f1_model['f1_valid'], 
+            "Test Accuracy": results['acc'], 
+            "Optimal Gamma": gamma
+            }, index=[0])
+        out = out.append(other, ignore_index=True)
+print(out.to_markdown())
