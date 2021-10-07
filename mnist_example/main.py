@@ -14,13 +14,12 @@ print(__doc__)
 # License: BSD 3 clause
 
 # Standard scientific Python imports
-import os
 from os import path as osp
 # import matplotlib.pyplot as plt
 # import pickle
 from numpy.lib.npyio import save
-from joblib import dump, load
-from utils import preprocess, create_split, create_model_and_train, test
+from joblib import load
+from utils import preprocess, create_split, create_model_train_and_dump, test
 # Import datasets, classifiers and performance metrics
 from sklearn import datasets
 import pandas as pd
@@ -58,10 +57,10 @@ digits = datasets.load_digits()
 # in the test subset.
 
 out = pd.DataFrame(columns=["Val-Test-Split-Ratios", "Rescale Factor", "F1-Validation", "Test Accuracy", "Optimal Gamma"])
-for val_test_ratio in [(0.15, 0.15), (0.15, 0.30), (0.25, 0.25), (0.3, 0.3), (0.2, 0.4)]:
-    for rescale_factor in [0.25, 0.5, 1, 1.5, 2, 2.5]:
-# for val_test_ratio in [(0.15, 0.15)]:
-#     for rescale_factor in [1]:
+# for val_test_ratio in [(0.15, 0.15), (0.15, 0.30), (0.25, 0.25), (0.3, 0.3), (0.2, 0.4)]:
+    # for rescale_factor in [0.25, 0.5, 1, 1.5, 2, 2.5]:
+for val_test_ratio in [(0.15, 0.15)]:
+    for rescale_factor in [1]:
         # print()
         # print("="*100)
         # print(f"Processing for Val-test ratio {val_test_ratio}, rescale {rescale_factor}")
@@ -78,7 +77,7 @@ for val_test_ratio in [(0.15, 0.15), (0.15, 0.30), (0.25, 0.25), (0.3, 0.3), (0.
         candidates = []
         for gamma in (10**exp for exp in range(-7,4)):
 
-            clf = create_model_and_train(X_train, y_train, gamma)
+            clf = create_model_train_and_dump(X_train, y_train, gamma, val_test_ratio, rescale_factor)
 
             # Predict the value of the digit on the validation subset
             metrcs = test(clf, X_val, y_val)
@@ -96,15 +95,6 @@ for val_test_ratio in [(0.15, 0.15), (0.15, 0.30), (0.25, 0.25), (0.3, 0.3), (0.
             }
             candidates.append(candidate)
             max_f1 = metrcs["f1"] if max_f1 < metrcs["f1"] else max_f1
-
-            # store model to disk
-            output_folder = osp.abspath("models/tt_{}_val_{}_rescale_{}_gamma_{}".format(
-                val_test_ratio[1], val_test_ratio[0], rescale_factor, gamma
-            ))
-            os.mkdir(output_folder) if not osp.exists(output_folder) else None
-            # with open(osp.join(output_folder, "model.pkl"), 'wb') as fp:
-            #     pickle.dump(candidate, fp)
-            dump(clf, osp.join(output_folder, "model.joblib"))
 
         # select best candidate model on the basis of f1 score on validation
         max_valid_f1_model = max(candidates, key = lambda x: x["f1_valid"])

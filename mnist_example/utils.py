@@ -3,6 +3,10 @@ from sklearn import svm, metrics
 from sklearn.model_selection import train_test_split
 from skimage.transform import rescale
 import numpy as np
+from joblib import dump, load
+from os import path as osp
+import os
+
 
 def preprocess(data, rescale_factor):
     resized_images = []
@@ -26,11 +30,22 @@ def create_split(X, y, val_test_ratio=(0.25, 0.5)):
         X_train, y_train, test_size = valid_ratio, shuffle=False)
     return (X_train, X_val, X_test, y_train, y_val, y_test)
 
-def create_model_and_train(X_train, y_train, gamma):
+def create_model_train_and_dump(X_train, y_train, gamma, val_test_ratio, rescale_factor):
     # create model
     clf = svm.SVC(gamma=gamma)
+
     # Learn the digits on the train subset
     clf.fit(X_train, y_train)
+
+    # store model to disk
+    output_folder = osp.abspath("mnist_example/models/tt_{}_val_{}_rescale_{}_gamma_{}".format(
+        val_test_ratio[1], val_test_ratio[0], rescale_factor, gamma
+    ))
+    os.mkdir(output_folder) if not osp.exists(output_folder) else None
+    # with open(osp.join(output_folder, "model.pkl"), 'wb') as fp:
+    #     pickle.dump(candidate, fp)
+    dump(clf, osp.join(output_folder, "model.joblib"))
+    
     return clf
 
 def test(model, X_test, y_true):
