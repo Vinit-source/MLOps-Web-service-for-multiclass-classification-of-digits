@@ -1,36 +1,60 @@
-# mnist_example
+# ML Ops Repo
 
-# Assigment 4: Metrics as function of Hyperparameters
-## Hyperparamter Tuning
-|    | Val-Test-Split-Ratios   |   Rescale Factor |   F1-Validation |   Test Accuracy |   Optimal Gamma |
-|---:|:------------------------|-----------------:|----------------:|----------------:|----------------:|
-|  0 | 0.15, 0.15              |             0.25 |        0.696244 |        0.603704 |          0.01   |
-|  1 | 0.15, 0.15              |             0.5  |        0.950015 |        0.862963 |          0.01   |
-|  2 | 0.15, 0.15              |             1    |        0.991531 |        0.948148 |          0.001  |
-|  3 | 0.15, 0.15              |             1.5  |        0.991531 |        0.940741 |          0.001  |
-|  4 | 0.15, 0.15              |             2    |        0.995817 |        0.937037 |          0.001  |
-|  5 | 0.15, 0.15              |             2.5  |        0.990927 |        0.903704 |          0.001  |
-|  6 | 0.15, 0.3               |             0.25 |        0.576727 |        0.625926 |          0.01   |
-|  7 | 0.15, 0.3               |             0.5  |        0.924481 |        0.868519 |          0.01   |
-|  8 | 0.15, 0.3               |             1    |        0.990207 |        0.957407 |          0.001  |
-|  9 | 0.15, 0.3               |             1.5  |        0.995235 |        0.955556 |          0.001  |
-| 10 | 0.15, 0.3               |             2    |        0.985272 |        0.953704 |          0.001  |
-| 11 | 0.15, 0.3               |             2.5  |        0.979238 |        0.948148 |          0.0001 |
-| 12 | 0.25, 0.25              |             0.25 |        0.611408 |        0.604444 |          0.1    |
-| 13 | 0.25, 0.25              |             0.5  |        0.907989 |        0.855556 |          0.01   |
-| 14 | 0.25, 0.25              |             1    |        0.984865 |        0.957778 |          0.001  |
-| 15 | 0.25, 0.25              |             1.5  |        0.987828 |        0.953333 |          0.001  |
-| 16 | 0.25, 0.25              |             2    |        0.979084 |        0.935556 |          0.0001 |
-| 17 | 0.25, 0.25              |             2.5  |        0.979084 |        0.946667 |          0.0001 |
-| 18 | 0.3, 0.3                |             0.25 |        0.572832 |        0.596296 |          0.1    |
-| 19 | 0.3, 0.3                |             0.5  |        0.924099 |        0.862963 |          0.01   |
-| 20 | 0.3, 0.3                |             1    |        0.979056 |        0.955556 |          0.001  |
-| 21 | 0.3, 0.3                |             1.5  |        0.98689  |        0.959259 |          0.001  |
-| 22 | 0.3, 0.3                |             2    |        0.97659  |        0.953704 |          0.001  |
-| 23 | 0.3, 0.3                |             2.5  |        0.976409 |        0.95     |          0.0001 |
-| 24 | 0.2, 0.4                |             0.25 |        0.543672 |        0.59249  |          0.1    |
-| 25 | 0.2, 0.4                |             0.5  |        0.930739 |        0.870654 |          0.01   |
-| 26 | 0.2, 0.4                |             1    |        0.977463 |        0.961057 |          0.001  |
-| 27 | 0.2, 0.4                |             1.5  |        0.982025 |        0.968011 |          0.001  |
-| 28 | 0.2, 0.4                |             2    |        0.982269 |        0.947149 |          0.0001 |
-| 29 | 0.2, 0.4                |             2.5  |        0.978089 |        0.955494 |          0.0001 |
+# Assigment 6: Running Tests for SVM model
+
+----------------------
+
+### TODO: write  a test case to check if model is successfully getting created or not?
+```
+def test_model_writing():
+
+    1. create some data
+
+    2. run_classification_experiment(data, expeted-model-file)
+
+    assert os.path.isfile(expected-model-file)
+```
+
+### TODO: write a test case to check fitting on training -- litmus test.
+
+```
+def test_small_data_overfit_checking():
+
+    1. create a small amount of data / (digits / subsampling)
+
+    2. train_metrics = run_classification_experiment(train=train, valid=train)
+
+    assert train_metrics['acc']  > some threshold
+
+    assert train_metrics['f1'] > some other threshold
+```
+---------------------------
+
+```python
+======================================= test session starts ========================================
+platform linux -- Python 3.6.9, pytest-6.2.5, py-1.10.0, pluggy-1.0.0
+rootdir: /media/vinitgore/Workplace/MTech/Developer Notes/MTechYear2Sem1/MLOps/mnist_example
+collected 6 items                                                                                  
+
+tests/model_writing_test.py ...                                                              [ 50%]
+tests/sample_test.py ..F                                                                     [100%]
+
+============================================= FAILURES =============================================
+____________________________________________ test_sqrt _____________________________________________
+
+    def test_sqrt():
+        num=1
+>       assert(num==2*2)
+E       assert 1 == (2 * 2)
+
+tests/sample_test.py:12: AssertionError
+========================================= warnings summary =========================================
+tests/model_writing_test.py: 5391 warnings
+  /home/vinitgore/miniconda3/envs/mlops/lib/python3.6/site-packages/skimage/util/dtype.py:226: DeprecationWarning: Converting `np.inexact` or `np.floating` to a dtype is deprecated. The current result is `float64` which is not strictly correct.
+    dtypeobj_out = np.dtype(dtype)
+
+-- Docs: https://docs.pytest.org/en/stable/warnings.html
+===================================== short test summary info ======================================
+FAILED tests/sample_test.py::test_sqrt - assert 1 == (2 * 2)
+=========================== 1 failed, 5 passed, 5391 warnings in 15.38s ============================
+```
