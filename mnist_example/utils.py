@@ -22,13 +22,17 @@ def preprocess(data, rescale_factor):
 def create_split(X, y, val_test_ratio=(0.25, 0.5)):
     valid_ratio = val_test_ratio[0]
     test_ratio = val_test_ratio[1]
-    # Split data into train and test dataset 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size = test_ratio, shuffle=False)
-    # Split train data into train and validation subsets
-    X_train, X_val, y_train, y_val = train_test_split(
-        X_train, y_train, test_size = valid_ratio, shuffle=False)
-    return (X_train, X_val, X_test, y_train, y_val, y_test)
+    X_train, X_test_valid, y_train, y_test_valid = train_test_split(
+        X, y, test_size=test_ratio + valid_ratio, shuffle=False
+    )
+
+    X_test, X_valid, y_test, y_valid = train_test_split(
+        X_test_valid,
+        y_test_valid,
+        test_size=valid_ratio / (test_ratio + valid_ratio),
+        shuffle=False,
+    )
+    return X_train, X_valid, X_test, y_train, y_valid, y_test
 
 def create_model_train_and_dump(X_train, y_train, gamma, val_test_ratio, rescale_factor):
     # create model
