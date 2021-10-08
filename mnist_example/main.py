@@ -19,7 +19,7 @@ from os import path as osp
 # import pickle
 from numpy.lib.npyio import save
 from joblib import load
-from utils import preprocess, create_split, create_model_train_and_dump, test
+from utils import *
 # Import datasets, classifiers and performance metrics
 from sklearn import datasets
 import pandas as pd
@@ -100,11 +100,7 @@ for val_test_ratio in [(0.15, 0.15)]:
         max_valid_f1_model = max(candidates, key = lambda x: x["f1_valid"])
         gamma = max_valid_f1_model["gamma"]
 
-        # load model from disk
-        best_model_folder = osp.abspath("models/tt_{}_val_{}_rescale_{}_gamma_{}".format(
-                val_test_ratio[1], val_test_ratio[0], rescale_factor, gamma
-            ))
-        clf = load(osp.join(best_model_folder, "model.joblib"))
+        clf = load_saved_model(val_test_ratio, rescale_factor, gamma)
 
         # print optimal gamma and metrics
         # print(f"Optimal Gamma value: {max_valid_f1_model['gamma']}, on validation subset, \

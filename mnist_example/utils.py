@@ -63,3 +63,11 @@ def test(model, X_test, y_true):
         )
 
     return {"acc" : acc, "f1" : f1}
+
+def load_saved_model(val_test_ratio, rescale_factor, gamma):
+    # load model from disk
+    best_model_folder = osp.abspath("mnist_example/models/tt_{}_val_{}_rescale_{}_gamma_{}".format(
+            val_test_ratio[1], val_test_ratio[0], rescale_factor, gamma
+        ))
+    clf = load(osp.join(best_model_folder, "model.joblib"))
+    return clf

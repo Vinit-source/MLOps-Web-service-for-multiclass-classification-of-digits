@@ -21,10 +21,20 @@ def test_load_data_with_splits():
     print(n)
     # X_train, X_val, X_test, y_train, y_val, y_test = utils.create_split(X, y, val_test_ratio=val_test_ratio)
     X_train, X_val, X_test, y_train, y_val, y_test = load_data_with_splits()
-    assert(len(X_train) in [floor(0.7*n), ceil(0.7*n)])
-    assert(len(X_test) in [floor(0.2*n), ceil(0.2*n)])
-    assert(len(X_val) in [floor(0.1*n), ceil(0.1*n)])
-    assert((len(X_train) + len(X_test) + len(X_val)) == n)
+    lX_train, lX_val, lX_test, ly_train, ly_val, ly_test = len(X_train), len(X_val), len(X_test), len(y_train), len(y_val), len(y_test)
+    assert(lX_train in [floor(0.7*n), ceil(0.7*n)])
+    assert(lX_test in [floor(0.2*n), ceil(0.2*n)])
+    assert(lX_val in [floor(0.1*n), ceil(0.1*n)])
+    assert((lX_train + lX_test + lX_val) == n)
+    assert(ly_train in [floor(0.7*n), ceil(0.7*n)])
+    assert(ly_test in [floor(0.2*n), ceil(0.2*n)])
+    assert(ly_val in [floor(0.1*n), ceil(0.1*n)])
+    assert((ly_train + ly_test + ly_val) == n)
+    assert(lX_train == ly_train)
+    assert(lX_test == ly_test)
+    assert(lX_val == ly_val)
+    assert(X_train.shape[1:] == X_test.shape[1:])
+    assert(X_train.shape[1:] == X_val.shape[1:])
 
 
 def test_create_model_train_and_dump():
@@ -36,7 +46,13 @@ def test_create_model_train_and_dump():
 
 def test_small_data_overfit_checking():
     X_train, _, _, y_train, _, _ = load_data_with_splits()
-    clf = utils.create_model_train_and_dump(X_train, y_train, gamma, val_test_ratio, rescale_factor)
+    # clf = utils.create_model_train_and_dump(X_train, y_train, gamma, val_test_ratio, rescale_factor)
+    try:
+        clf = utils.load_saved_model(
+            val_test_ratio, rescale_factor, gamma
+        )
+    except:
+        raise Exception("Model cannot be loaded. The model file might be corrupted.")
     train_metrics = utils.test(clf, X_train, y_train)
     acc_threshold, f1_threshold = 0.9, 0.9
     assert(train_metrics['acc']>acc_threshold)
