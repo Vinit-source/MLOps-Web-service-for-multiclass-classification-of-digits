@@ -15,12 +15,12 @@ print(__doc__)
 
 # Standard scientific Python imports
 from os import path as osp
-# import matplotlib.pyplot as plt
-# import pickle
+import os
 from numpy.lib.npyio import save
 from joblib import load
 from utils import *
 # Import datasets, classifiers and performance metrics
+from sklearn import svm, tree, metrics
 from sklearn import datasets
 import pandas as pd
 
@@ -55,67 +55,46 @@ digits = datasets.load_digits()
 # vector classifier on the train samples. The fitted classifier can
 # subsequently be used to predict the value of the digit for the samples
 # in the test subset.
-
-out = pd.DataFrame(columns=["Val-Test-Split-Ratios", "Rescale Factor", "F1-Validation", "Test Accuracy", "Optimal Gamma"])
-# for val_test_ratio in [(0.15, 0.15), (0.15, 0.30), (0.25, 0.25), (0.3, 0.3), (0.2, 0.4)]:
-    # for rescale_factor in [0.25, 0.5, 1, 1.5, 2, 2.5]:
+CURR_DIR = "."
+MODELS_DIR = f"{CURR_DIR}/mnist_example/models"
+os.makedirs(MODELS_DIR) if not osp.exists(MODELS_DIR) else None
+out = pd.DataFrame(columns=["Split", "SVM: Test Accuracy", "Decision Tree: Test Accuracy"])
 for val_test_ratio in [(0.15, 0.15)]:
     for rescale_factor in [1]:
-        # print()
-        # print("="*100)
-        # print(f"Processing for Val-test ratio {val_test_ratio}, rescale {rescale_factor}")
-        # print("="*100)
-        # preprocess data
-        X, y = preprocess(digits, rescale_factor=rescale_factor)
+        for split in range(5):
+            # preprocess data
+            X, y = preprocess(digits, rescale_factor=rescale_factor)
 
-        # split into train, val and test subsets
-        X_train, X_val, X_test, y_train, y_val, y_test = create_split(X, y, val_test_ratio=val_test_ratio)
+            # split into train, val and test subsets
+            X_train, X_val, X_test, y_train, y_val, y_test = create_split(X, y, val_test_ratio=val_test_ratio)
 
-        #!TODO: Convert into command-line program using argparse
-        # Create a classifier: a support vector classifier
-        max_f1 = 0
-        candidates = []
-        for gamma in (10**exp for exp in range(-7,4)):
+            #!TODO: Convert into command-line program using argparse
+            # Create a support vector classifier
+            clf_params = {"gamma": [10**i for i in range(-4, 1)]}
+            clf_class = svm.SVC
+            best_clf, max_valid_f1_model, best_hyperparams = run_loop_on_hyperparams(clf_class, clf_params, X_train, y_train, X_val, y_val, val_test_ratio, rescale_factor)
 
-            clf = create_model_train_and_dump(X_train, y_train, gamma, val_test_ratio, rescale_factor)
+            # infer on test dataset
+            results_svm = test(model=best_clf, X_test=X_test, y_true=y_test)
 
-            # Predict the value of the digit on the validation subset
-            metrcs = test(clf, X_val, y_val)
-            
-            # skip irrelevant models on the basis of f1 score
-            if max_f1 >= metrcs["f1"]:
-                # print(f"Skipping for gamma = {gamma}")
-                continue
+            # Create a Decision tree classifier
+            clf_params = {}
+            clf_class = tree.DecisionTreeClassifier
+            best_clf, max_valid_f1_model, best_hyperparams = run_loop_on_hyperparams(clf_class, clf_params, X_train, y_train, X_val, y_val, val_test_ratio, rescale_factor)
 
-            # save values of relevant models on the basis of f1 score
-            candidate = {
-                "accval":metrcs["acc"],
-                "f1_valid": metrcs["f1"],
-                "gamma": gamma
-            }
-            candidates.append(candidate)
-            max_f1 = metrcs["f1"] if max_f1 < metrcs["f1"] else max_f1
+            # infer on test dataset
+            results_tree = test(model=best_clf, X_test=X_test, y_true=y_test)
 
-        # select best candidate model on the basis of f1 score on validation
-        max_valid_f1_model = max(candidates, key = lambda x: x["f1_valid"])
-        gamma = max_valid_f1_model["gamma"]
-
-        clf = load_saved_model(val_test_ratio, rescale_factor, gamma)
-
-        # print optimal gamma and metrics
-        # print(f"Optimal Gamma value: {max_valid_f1_model['gamma']}, on validation subset, \
-        #     F1 score: {max_valid_f1_model['f1_valid']}, accuracy: {max_valid_f1_model['accval']}")
-        # clf = pickle.loads(saved_model)
-
-        # infer on test dataset
-        results = test(model=clf, X_test=X_test, y_true=y_test)
-        print(f"Val-test ratio {val_test_ratio}, rescale {rescale_factor}: Test acc: {results['acc']}")
-        other = pd.DataFrame({
-            "Val-Test-Split-Ratios": f"{val_test_ratio[0]}, {val_test_ratio[1]}",
-            "Rescale Factor": rescale_factor,
-            "F1-Validation": max_valid_f1_model['f1_valid'], 
-            "Test Accuracy": results['acc'], 
-            "Optimal Gamma": gamma
-            }, index=[0])
-        out = out.append(other, ignore_index=True)
+            other = pd.DataFrame({
+                "Split": split+1,
+                "SVM: Test Accuracy": results_svm['acc'], 
+                "Decision Tree: Test Accuracy": results_tree['acc']
+                }, index=[0])
+            out = out.append(other, ignore_index=True)
+stats = pd.DataFrame({
+    "Split":"Stats",
+    "SVM: Test Accuracy": f"{float(out['SVM: Test Accuracy'].mean()):.5f}+/-{float(out['SVM: Test Accuracy'].std()):.5f}", 
+    "Decision Tree: Test Accuracy": f"{float(out['Decision Tree: Test Accuracy'].mean()):.5f}+/-{float(out['Decision Tree: Test Accuracy'].std()):.5f}"
+    }, index=[0])
+out = out.append(stats, ignore_index=True)
 print(out.to_markdown())
