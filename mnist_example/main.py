@@ -94,19 +94,24 @@ for val_test_ratio in [(0.15, 0.15)]:
             # infer on test dataset
             results_tree = test(model=best_clf, X_test=X_test, y_true=y_test)
 
-            other = pd.DataFrame({
+            # add row to the output dataframe
+            row = pd.DataFrame({
                 "Split": split+1,
                 "SVM: Test Accuracy": results_svm['acc'], 
                 "Gamma": best_hyperparams_svm["gamma"],
                 "Decision Tree: Test Accuracy": results_tree['acc'],
                 "Depth": best_hyperparams_tree["max_depth"]
                 }, index=[0])
-            out = out.append(other, ignore_index=True)
+            out = out.append(row, ignore_index=True)
+
+# round float values in the dataframe to 3 decimals
 out = out.round(3)
-stats = pd.DataFrame({
-    "Split":"Mean +/- Std-dev",
+# add row for mean and std-dev
+row = pd.DataFrame({
+    "Split":"Mean+/-Std-dev",
     "SVM: Test Accuracy": f"{float(out['SVM: Test Accuracy'].mean()):.3f}+/-{float(out['SVM: Test Accuracy'].std()):.3f}", 
     "Decision Tree: Test Accuracy": f"{float(out['Decision Tree: Test Accuracy'].mean()):.3f}+/-{float(out['Decision Tree: Test Accuracy'].std()):.3f}"
     }, index=[0])
-out = out.append(stats, ignore_index=True)
+out = out.append(row, ignore_index=True)
+# print in markdown format
 print(out.to_markdown())
