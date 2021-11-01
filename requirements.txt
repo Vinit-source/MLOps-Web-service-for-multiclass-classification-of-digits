@@ -5,3 +5,5 @@ numpy
 scikit-image
 tabulate
 pytest == 6.2.5
+Flask==2.0.2
+flask-restx==0.5.1
