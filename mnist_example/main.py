@@ -63,51 +63,40 @@ MODELS_DIR = f"{CURR_DIR}/mnist_example/models"
 # Make model directory if not exists
 os.makedirs(MODELS_DIR) if not osp.exists(MODELS_DIR) else None
 # Create output dataframe
-out = pd.DataFrame(columns=["Split", "SVM: Test Accuracy", "Gamma", "Decision Tree: Test Accuracy", "Depth"])
+out = pd.DataFrame(columns=["Gamma", "C", "Train", "Dev", "Test"])
 #!TODO: Convert into command-line program using argparse
 
 # Declare classifier params
-svm_params = {"gamma": [10**i for i in range(-4, 1)]}
-tree_params = {"max_depth": [i for i in range(1,11, 2)]}
+svm_params = {"gamma": [10**i for i in range(-4, 1)], "C": [10**i for i in range(-4, 1)]}
+# tree_params = {"max_depth": [i for i in range(1,11, 2)]}
 
 # Main loop
-for val_test_ratio in [(0.15, 0.15)]:
-    for rescale_factor in [1]:
-        # preprocess data
-        X, y = preprocess(digits, rescale_factor=rescale_factor)
+for svm_params in [{"gamma":[0.001], "C":[0.001]}, {"gamma":[0.001], "C":[0.01]}, {"gamma":[0.1], "C":[0.01]}]:
+    for val_test_ratio in [(0.15, 0.15)]:
+        for rescale_factor in [1]:
+            # preprocess data
+            X, y = preprocess(digits, rescale_factor=rescale_factor)
 
-        for split in range(1):
-            # split into train, val and test subsets
-            X_train, X_val, X_test, y_train, y_val, y_test = create_split(X, y, val_test_ratio=val_test_ratio)
+            for split in range(3):
+                # split into train, val and test subsets
+                X_train, X_val, X_test, y_train, y_val, y_test = create_split(X, y, val_test_ratio=val_test_ratio)
 
-            # Create a support vector classifier
-            clf_class = svm.SVC
-            best_clf, max_valid_f1_model, best_hyperparams_svm = run_loop_on_hyperparams(clf_class, svm_params, X_train, y_train, X_val, y_val, val_test_ratio, rescale_factor)
+                # Create a support vector classifier
+                clf_class = svm.SVC
+                best_clf, max_valid_f1_model, best_hyperparams_svm = run_loop_on_hyperparams(clf_class, svm_params, X_train, y_train, X_val, y_val, val_test_ratio, rescale_factor)
 
-            # infer on test dataset
-            results_svm = test(model=best_clf, X_test=X_test, y_true=y_test)
+                # infer on test dataset
+                results_svm = test(model=best_clf, X_test=X_test, y_true=y_test)
 
-            # save best SVM model
-            save_best_model(best_clf, clf_class)
-            
-            # Create a Decision tree classifier
-            clf_class = tree.DecisionTreeClassifier
-            best_clf, max_valid_f1_model, best_hyperparams_tree = run_loop_on_hyperparams(clf_class, tree_params, X_train, y_train, X_val, y_val, val_test_ratio, rescale_factor)
+                # save best SVM model
+                save_best_model(best_clf, clf_class)
 
-            # save best Decision Tree model
-            save_best_model(best_clf, clf_class)
-
-            # infer on test dataset
-            results_tree = test(model=best_clf, X_test=X_test, y_true=y_test)
-
-            other = pd.DataFrame({
-                "Split": split+1,
-                "SVM: Test Accuracy": results_svm['acc'], 
-                "Gamma": best_hyperparams_svm["gamma"],
-                "Decision Tree: Test Accuracy": results_tree['acc'],
-                "Depth": best_hyperparams_tree["max_depth"]
-                }, index=[0])
-            out = out.append(other, ignore_index=True)
+                other = pd.DataFrame({
+                    "Gamma": svm_params["gamma"],
+                    "C": svm_params["C"], 
+                    "Train": , "Run1-Dev", "Run1-Test", "Run2-Train", "Run2-Dev", "Run2-Test", "Run3-Train", "Run3-Dev", "Run3-Test", "Mean-Train", "Mean-Dev", "Mean-Test"])
+                    }, index=[0])
+                out = out.append(other, ignore_index=True)
 out = out.round(3)
 stats = pd.DataFrame({
     "Split":"Mean +/- Std-dev",
