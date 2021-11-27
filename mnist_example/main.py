@@ -64,14 +64,9 @@ MODELS_DIR = f"{CURR_DIR}/mnist_example/models"
 os.makedirs(MODELS_DIR) if not osp.exists(MODELS_DIR) else None
 # Create output dataframe
 out = pd.DataFrame(columns=["Gamma", "C", "Train", "Dev", "Test"])
-#!TODO: Convert into command-line program using argparse
-
-# Declare classifier params
-svm_params = {"gamma": [10**i for i in range(-4, 1)], "C": [10**i for i in range(-4, 1)]}
-# tree_params = {"max_depth": [i for i in range(1,11, 2)]}
 
 # Main loop
-for svm_params in [{"gamma":[0.001], "C":[0.001]}, {"gamma":[0.001], "C":[0.01]}, {"gamma":[0.1], "C":[0.01]}]:
+for svm_params in [{"gamma":0.001, "C":0.001}, {"gamma":0.001, "C":0.01}, {"gamma":0.1, "C":0.01}]:
     for val_test_ratio in [(0.15, 0.15)]:
         for rescale_factor in [1]:
             # preprocess data
@@ -83,25 +78,37 @@ for svm_params in [{"gamma":[0.001], "C":[0.001]}, {"gamma":[0.001], "C":[0.01]}
 
                 # Create a support vector classifier
                 clf_class = svm.SVC
-                best_clf, max_valid_f1_model, best_hyperparams_svm = run_loop_on_hyperparams(clf_class, svm_params, X_train, y_train, X_val, y_val, val_test_ratio, rescale_factor)
+                clf = run_classification_train_task(clf_class, svm_params, X_train, y_train)
 
                 # infer on test dataset
-                results_svm = test(model=best_clf, X_test=X_test, y_true=y_test)
-
-                # save best SVM model
-                save_best_model(best_clf, clf_class)
+                results_svm = test(model=clf, X_train=X_train, y_train=y_train, X_val=X_val, y_val=y_val, X_test=X_test, y_true=y_test)
 
                 other = pd.DataFrame({
                     "Gamma": svm_params["gamma"],
                     "C": svm_params["C"], 
-                    "Train": , "Run1-Dev", "Run1-Test", "Run2-Train", "Run2-Dev", "Run2-Test", "Run3-Train", "Run3-Dev", "Run3-Test", "Mean-Train", "Mean-Dev", "Mean-Test"])
+                    "Train": results_svm["train_acc"], 
+                    "Dev": results_svm["val_acc"], 
+                    "Test": results_svm["test_acc"]
                     }, index=[0])
                 out = out.append(other, ignore_index=True)
 out = out.round(3)
 stats = pd.DataFrame({
-    "Split":"Mean +/- Std-dev",
-    "SVM: Test Accuracy": f"{float(out['SVM: Test Accuracy'].mean()):.3f}+/-{float(out['SVM: Test Accuracy'].std()):.3f}", 
-    "Decision Tree: Test Accuracy": f"{float(out['Decision Tree: Test Accuracy'].mean()):.3f}+/-{float(out['Decision Tree: Test Accuracy'].std()):.3f}"
+    "Train": f"{float(out['Train'][:3].mean()):.3f}", 
+    "Dev": f"{float(out['Dev'][:3].mean()):.3f}", 
+    "Test": f"{float(out['Test'][:3].mean()):.3f}"
     }, index=[0])
 out = out.append(stats, ignore_index=True)
+stats = pd.DataFrame({
+    "Train": f"{float(out['Train'][3:6].mean()):.3f}", 
+    "Dev": f"{float(out['Dev'][3:6].mean()):.3f}", 
+    "Test": f"{float(out['Test'][3:6].mean()):.3f}"
+    }, index=[0])
+out = out.append(stats, ignore_index=True)
+stats = pd.DataFrame({
+    "Train": f"{float(out['Train'][6:9].mean()):.3f}", 
+    "Dev": f"{float(out['Dev'][6:9].mean()):.3f}", 
+    "Test": f"{float(out['Test'][6:9].mean()):.3f}"
+    }, index=[0])
+out = out.append(stats, ignore_index=True)
+
 print(out.to_markdown())
