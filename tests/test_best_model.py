@@ -1,6 +1,7 @@
 from sklearn.datasets import load_digits
 from mnist_example import utils
 from joblib import load
+from sklearn.metrics import confusion_matrix
 import numpy as np
 
 # load images for test
@@ -155,3 +156,7 @@ def test_Tree_digit_correct_9():
     prediction = clf.predict(X[idx].reshape((1, -1)))
     assert(prediction==y[idx])
 
+# def test_Tree_class_acc_0():
+    # use confusion_matrix
+    # cm.diagonal
+    # Reference: https://stackoverflow.com/a/50977153/15294463
