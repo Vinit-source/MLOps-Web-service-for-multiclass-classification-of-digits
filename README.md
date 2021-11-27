@@ -1,8 +1,6 @@
 # ML Ops Repo
 
-# Quiz 3: Test best Model
+# Assignment 10:
 
-Serve model on Web API using Flask.
-
-Results:
-![result](images/Screenshot%20from%202021-11-27%2016-58-33.png)
+1. Serve SVM and Decision tree models using the flask on separate relative URLs. i.e. `localhost:8000/svm_predict` and `localhost:8000/decision_tree_predict`. (ip could be different than localhost, in your case)
+2. Dockerize the deployment i.e. create dockerfile and build image such that when you do `docker run` (may be with some more flags), the above two links should be accessible via curl. Write `docker_example.sh` shell script that includes the full curl commands.
