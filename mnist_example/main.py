@@ -76,7 +76,7 @@ for val_test_ratio in [(0.15, 0.15)]:
         # preprocess data
         X, y = preprocess(digits, rescale_factor=rescale_factor)
 
-        for split in range(5):
+        for split in range(1):
             # split into train, val and test subsets
             X_train, X_val, X_test, y_train, y_val, y_test = create_split(X, y, val_test_ratio=val_test_ratio)
 
@@ -87,9 +87,15 @@ for val_test_ratio in [(0.15, 0.15)]:
             # infer on test dataset
             results_svm = test(model=best_clf, X_test=X_test, y_true=y_test)
 
+            # save best SVM model
+            save_best_model(best_clf, clf_class)
+            
             # Create a Decision tree classifier
             clf_class = tree.DecisionTreeClassifier
             best_clf, max_valid_f1_model, best_hyperparams_tree = run_loop_on_hyperparams(clf_class, tree_params, X_train, y_train, X_val, y_val, val_test_ratio, rescale_factor)
+
+            # save best Decision Tree model
+            save_best_model(best_clf, clf_class)
 
             # infer on test dataset
             results_tree = test(model=best_clf, X_test=X_test, y_true=y_test)

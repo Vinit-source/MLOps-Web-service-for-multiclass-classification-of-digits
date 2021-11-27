@@ -121,8 +121,10 @@ def run_loop_on_hyperparams(clf_class, clf_params, X_train, y_train, X_val, y_va
     # select best candidate model on the basis of f1 score on validation
     max_valid_f1_model = max(candidates, key = lambda x: x["f1_valid"])
     best_clf, best_hyperparams = load_saved_model(val_test_ratio, rescale_factor, max_valid_f1_model, clf_params)
-    best_model_save_folder = osp.abspath("mnist_example/models/best_model")
-    os.mkdir(best_model_save_folder) if not osp.exists(best_model_save_folder) else None
-    dump(clf, osp.join(best_model_save_folder, "model.joblib"))
     return best_clf, max_valid_f1_model, best_hyperparams
 
+
+def save_best_model(best_clf, clf_class):
+    best_model_save_folder = osp.abspath(f"mnist_example/models/best_model_{clf_class.__name__}")
+    os.mkdir(best_model_save_folder) if not osp.exists(best_model_save_folder) else None
+    dump(best_clf, osp.join(best_model_save_folder, "model.joblib"))
