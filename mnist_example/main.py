@@ -9,10 +9,6 @@ hand-written digits, from 0-9.
 
 print(__doc__)
 
-
-# Author: Gael Varoquaux <gael dot varoquaux at normalesup dot org>
-# License: BSD 3 clause
-
 # Standard scientific Python imports
 from os import path as osp
 import os
@@ -64,7 +60,6 @@ MODELS_DIR = f"{CURR_DIR}/mnist_example/models"
 os.makedirs(MODELS_DIR) if not osp.exists(MODELS_DIR) else None
 # Create output dataframe
 out = pd.DataFrame(columns=["Split", "SVM: Test Accuracy", "Gamma", "Decision Tree: Test Accuracy", "Depth"])
-#!TODO: Convert into command-line program using argparse
 
 # Declare classifier params
 svm_params = {"gamma": [10**i for i in range(-4, 1)]}
