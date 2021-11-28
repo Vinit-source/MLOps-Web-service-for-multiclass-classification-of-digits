@@ -16,10 +16,9 @@ def svm_predict():
     print("Model loaded.")
     input_json = request.json
     image = input_json['image']
-    print(image)
     image = np.array(image).reshape(1, -1)
     predicted = clf.predict(image)
-    return str(predicted[0])
+    return "Prediction: " + str(predicted[0]) + "\n"
 
 
 @app.route("/tree_predict", methods=["POST"])
@@ -29,10 +28,9 @@ def tree_predict():
     print("Model loaded.")
     input_json = request.json
     image = input_json['image']
-    print(image)
     image = np.array(image).reshape(1, -1)
     predicted = clf.predict(image)
-    return "Prediction" + str(predicted[0]) + "\n"
+    return "Prediction: " + str(predicted[0]) + "\n"
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')
