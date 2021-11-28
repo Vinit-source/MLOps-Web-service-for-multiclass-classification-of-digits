@@ -59,14 +59,14 @@ def run_classification_train_task(clf_class, curr_params, X_train, y_train, val_
 def test(model, X_test, y_true):
     # Predict the value of the digit on the validation subset
     predicted = model.predict(X_test)
-    acc = metrics.accuracy_score(
-        y_true = y_true, y_pred = predicted, normalize=True
+    cm = metrics.confusion_matrix(
+        y_true = y_true, y_pred = predicted
         )
     f1 = metrics.f1_score(
         y_true=y_true, y_pred = predicted, average="macro"
         )
 
-    return {"acc" : acc, "f1" : f1}
+    return {"cm" : cm, "f1" : f1}
 
 def load_saved_model(val_test_ratio, rescale_factor, max_valid_f1_model, clf_params):
     # Extract best hyperparams
@@ -98,7 +98,7 @@ def run_loop_on_hyperparams(clf_class, clf_params, X_train, y_train, X_val, y_va
 
                 # save values of relevant models on the basis of f1 score
                 candidate = {
-                    "accval":metrcs["acc"],
+                    "cm_valid":metrcs["cm"],
                     "f1_valid": metrcs["f1"],
                 }
                 candidate.update(curr_params)
@@ -112,7 +112,7 @@ def run_loop_on_hyperparams(clf_class, clf_params, X_train, y_train, X_val, y_va
 
         # save values of relevant models on the basis of f1 score
         candidate = {
-            "accval":metrcs["acc"],
+            "cmval":metrcs["cm"],
             "f1_valid": metrcs["f1"],
         }
         candidates.append(candidate)
@@ -128,3 +128,16 @@ def save_best_model(best_clf, clf_class):
     best_model_save_folder = osp.abspath(f"mnist_example/models/best_model_{clf_class.__name__}")
     os.mkdir(best_model_save_folder) if not osp.exists(best_model_save_folder) else None
     dump(best_clf, osp.join(best_model_save_folder, "model.joblib"))
+
+def compare_cms(train_range, results):
+     # Compare confusion matrices
+    iterator = iter(train_range)
+    for itr in range(2):
+        fig, axs = plt.subplots(1, 5, figsize=(20, 10))
+        for i, ax in zip(range(5), axs):
+            curr = metrics.ConfusionMatrixDisplay(confusion_matrix=results[i]["cm"])
+            curr.plot(ax=ax, colorbar=False)
+            if not i == 0:
+                ax.set_ylabel("")
+            ax.set_title(f"{next(iterator)} %")
+        fig.suptitle("Comparative analysis on training sets of different sizes")

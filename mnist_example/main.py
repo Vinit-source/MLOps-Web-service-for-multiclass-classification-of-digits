@@ -22,8 +22,9 @@ from utils import *
 # Import datasets, classifiers and performance metrics
 from sklearn import svm, tree, metrics
 from sklearn import datasets
+# Utils libraries
 import pandas as pd
-
+from matplotlib import pyplot as plt
 
 ###############################################################################
 # Digits dataset
@@ -69,50 +70,54 @@ out = pd.DataFrame(columns=["Split", "SVM: Test Accuracy", "Gamma", "Decision Tr
 # Declare classifier params
 svm_params = {"gamma": [10**i for i in range(-4, 1)]}
 tree_params = {"max_depth": [i for i in range(1,11, 2)]}
+train_range = range(10, 110, 10)
 
 # Main loop
-for val_test_ratio in [(0.15, 0.15)]:
-    for rescale_factor in [1]:
-        # preprocess data
-        X, y = preprocess(digits, rescale_factor=rescale_factor)
+for loop in range(5):
+    for val_test_ratio in [(0.1, 0.1)]:
+        for rescale_factor in [1]:
+            # preprocess data
+            X, y = preprocess(digits, rescale_factor=rescale_factor)
 
-        for split in range(1):
             # split into train, val and test subsets
             X_train, X_val, X_test, y_train, y_val, y_test = create_split(X, y, val_test_ratio=val_test_ratio)
-
-            # Create a support vector classifier
-            clf_class = svm.SVC
-            best_clf, max_valid_f1_model, best_hyperparams_svm = run_loop_on_hyperparams(clf_class, svm_params, X_train, y_train, X_val, y_val, val_test_ratio, rescale_factor)
-
-            # infer on test dataset
-            results_svm = test(model=best_clf, X_test=X_test, y_true=y_test)
-
-            # save best SVM model
-            save_best_model(best_clf, clf_class)
             
-            # Create a Decision tree classifier
-            clf_class = tree.DecisionTreeClassifier
-            best_clf, max_valid_f1_model, best_hyperparams_tree = run_loop_on_hyperparams(clf_class, tree_params, X_train, y_train, X_val, y_val, val_test_ratio, rescale_factor)
+            results_svm, results_tree = [], []
+            for size in train_range:
+                # sample out ratio amount of rows from train set
+                idx = np.random.choice(np.arange(X_train.shape[0]), int(size*0.01*X_train.shape[0]), replace=False)
+                X_train_sampled, y_train_sampled = X_train[idx, :], y_train[idx]
 
-            # save best Decision Tree model
-            save_best_model(best_clf, clf_class)
+                # Create a support vector classifier
+                clf_class = svm.SVC
+                best_clf, max_valid_f1_model, best_hyperparams_svm = run_loop_on_hyperparams(clf_class, svm_params, X_train_sampled, y_train_sampled, X_val, y_val, val_test_ratio, rescale_factor)
 
-            # infer on test dataset
-            results_tree = test(model=best_clf, X_test=X_test, y_true=y_test)
+                # infer on test dataset
+                results_svm.append( test(model=best_clf, X_test=X_test, y_true=y_test) )
 
-            other = pd.DataFrame({
-                "Split": split+1,
-                "SVM: Test Accuracy": results_svm['acc'], 
-                "Gamma": best_hyperparams_svm["gamma"],
-                "Decision Tree: Test Accuracy": results_tree['acc'],
-                "Depth": best_hyperparams_tree["max_depth"]
-                }, index=[0])
-            out = out.append(other, ignore_index=True)
-out = out.round(3)
-stats = pd.DataFrame({
-    "Split":"Mean +/- Std-dev",
-    "SVM: Test Accuracy": f"{float(out['SVM: Test Accuracy'].mean()):.3f}+/-{float(out['SVM: Test Accuracy'].std()):.3f}", 
-    "Decision Tree: Test Accuracy": f"{float(out['Decision Tree: Test Accuracy'].mean()):.3f}+/-{float(out['Decision Tree: Test Accuracy'].std()):.3f}"
-    }, index=[0])
-out = out.append(stats, ignore_index=True)
-print(out.to_markdown())
+                # save best SVM model
+                save_best_model(best_clf, clf_class)
+                
+                # Create a Decision tree classifier
+                clf_class = tree.DecisionTreeClassifier
+                best_clf, max_valid_f1_model, best_hyperparams_tree = run_loop_on_hyperparams(clf_class, tree_params, X_train_sampled, y_train_sampled, X_val, y_val, val_test_ratio, rescale_factor)
+
+                # save best Decision Tree model
+                save_best_model(best_clf, clf_class)
+
+                # infer on test dataset
+                results_tree.append( test(model=best_clf, X_test=X_test, y_true=y_test) )
+
+#   # Compare confusion matrices
+#    compare_cms(train_range, results_svm)
+#    compare_cms(train_range, results_tree)
+
+# Plot F1 score analysis line chart
+fig , ax = plt.subplots()
+ax.plot(list(train_range), [r["f1"] for r in results_svm], color="blue", label="SVM")
+ax.plot(list(train_range), [r["f1"] for r in results_tree], color="green", label="Decision Tree")
+ax.legend()
+ax.set_title("F1-score analysis on varying training sets")
+ax.set_xlabel("Training Size")
+ax.set_ylabel("Macro F1-Score")
+plt.show()
