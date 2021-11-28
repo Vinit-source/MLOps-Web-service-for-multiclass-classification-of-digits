@@ -4,6 +4,7 @@ from skimage.transform import rescale
 import numpy as np
 from joblib import dump, load
 from os import path as osp
+from matplotlib import pyplot as plt
 import os
 
 
@@ -129,15 +130,29 @@ def save_best_model(best_clf, clf_class):
     os.mkdir(best_model_save_folder) if not osp.exists(best_model_save_folder) else None
     dump(best_clf, osp.join(best_model_save_folder, "model.joblib"))
 
-def compare_cms(train_range, results):
+def compare_cms(train_range, results, cls="SVM"):
      # Compare confusion matrices
     iterator = iter(train_range)
     for itr in range(2):
-        fig, axs = plt.subplots(1, 5, figsize=(20, 10))
+        fig, axs = plt.subplots(1, 5, sharey=True, figsize=(20, 10))
         for i, ax in zip(range(5), axs):
             curr = metrics.ConfusionMatrixDisplay(confusion_matrix=results[i]["cm"])
             curr.plot(ax=ax, colorbar=False)
             if not i == 0:
                 ax.set_ylabel("")
             ax.set_title(f"{next(iterator)} %")
-        fig.suptitle("Comparative analysis on training sets of different sizes")
+        fig.suptitle("Comparative analysis on training sets of different sizes for " + cls)
+
+def compare_f1(results_svm_overall, results_tree_overall, train_range):
+    # Plot F1 score analysis line chart
+    fig , axs = plt.subplots(1, 5, sharey=True, figsize=(20, 8))
+    for i, ax in enumerate(axs):
+        ax.plot(list(train_range), [r["f1"] for r in results_svm_overall[i]], color="blue", label="SVM")
+        ax.plot(list(train_range), [r["f1"] for r in results_tree_overall[i]], color="green", label="Decision Tree")
+        ax.set_xlabel("Training Size")
+        if i == 0:
+            ax.set_ylabel("Macro F1-Score")
+            ax.legend(loc="lower right")
+        ax.set_title(f"Iter {i+1}")
+    fig.suptitle("F1-score analysis on varying training sets")
+    # return fig, axs

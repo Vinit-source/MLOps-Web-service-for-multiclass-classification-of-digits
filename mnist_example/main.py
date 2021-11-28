@@ -71,7 +71,7 @@ out = pd.DataFrame(columns=["Split", "SVM: Test Accuracy", "Gamma", "Decision Tr
 svm_params = {"gamma": [10**i for i in range(-4, 1)]}
 tree_params = {"max_depth": [i for i in range(1,11, 2)]}
 train_range = range(10, 110, 10)
-
+results_svm_overall, results_tree_overall = [], []
 # Main loop
 for loop in range(5):
     for val_test_ratio in [(0.1, 0.1)]:
@@ -107,17 +107,16 @@ for loop in range(5):
 
                 # infer on test dataset
                 results_tree.append( test(model=best_clf, X_test=X_test, y_true=y_test) )
-
-#   # Compare confusion matrices
-#    compare_cms(train_range, results_svm)
-#    compare_cms(train_range, results_tree)
+    
+    results_svm_overall.append(results_svm)
+    results_tree_overall.append(results_tree)
 
 # Plot F1 score analysis line chart
-fig , ax = plt.subplots()
-ax.plot(list(train_range), [r["f1"] for r in results_svm], color="blue", label="SVM")
-ax.plot(list(train_range), [r["f1"] for r in results_tree], color="green", label="Decision Tree")
-ax.legend()
-ax.set_title("F1-score analysis on varying training sets")
-ax.set_xlabel("Training Size")
-ax.set_ylabel("Macro F1-Score")
+compare_f1(results_svm_overall, results_tree_overall, train_range)
+
+# Compare confusion matrices
+compare_cms(train_range, results_svm, "SVM")
+compare_cms(train_range, results_tree, "Decision Tree")
+
+# Display plots
 plt.show()
