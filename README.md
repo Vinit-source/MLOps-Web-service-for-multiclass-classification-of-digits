@@ -11,15 +11,17 @@
 ## Results:
 
 ### F1 Score on different sizes of dataset
-![result](images/Figure_3(1).png)
+![result](images/Screenshot%20from%202021-11-29%2002-42-50.png)
 
 Here we notice that the F1-scores are increasing in all the instances as the size of the training data increases.
 ### Confusion matrices on different sizes of dataset
 #### SVM
-![cm](images/Screenshot%20from%202021-11-29%2002-41-22.png.png)
-![cm](images/Screenshot%20from%202021-11-29%2002-42-03.png.png)
+![cm](images/Screenshot%20from%202021-11-29%2002-42-21.png)
+![cm](images/Screenshot%20from%202021-11-29%2002-42-03.png)
 
 #### Tree
 
+![cm](images/Screenshot%20from%202021-11-29%2002-41-26.png)
+![cm](images/Screenshot%20from%202021-11-29%2002-40-58.png)
 
-Comparison of Confusion matrices show that the accuracy increases and the number of misclassified examples decreases with the increase in the size of the training data.
+Comparison of Confusion matrices show that the number of correctly predicted examples increases and the number of misclassified examples decreases with the increase in the size of the training data.
