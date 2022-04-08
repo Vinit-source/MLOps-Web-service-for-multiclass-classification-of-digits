@@ -9,6 +9,7 @@ RUN pip3 install --no-cache-dir -r /exp/requirements.txt
 WORKDIR /exp
 EXPOSE 5000
 
-# RUN python3 ./mnist_example/main.py
+CMD ["python3", "./mnist_example/main.py"]
 # CMD ["python3", "./api/app.py"]
+CMD ["export", "FLASK_APP=./api/app.py"]
 CMD ["flask", "run", "--host=0.0.0.0"]
