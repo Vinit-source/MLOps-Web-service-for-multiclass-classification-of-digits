@@ -13,3 +13,4 @@ CMD ["python3", "./mnist_example/main.py"]
 # CMD ["python3", "./api/app.py"]
 CMD ["export", "FLASK_APP=./api/app.py"]
 CMD ["flask", "run", "--host=0.0.0.0"]
+
