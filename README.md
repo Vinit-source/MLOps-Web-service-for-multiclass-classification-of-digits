@@ -13,7 +13,7 @@
 ### Server:
 ![server](images/Screenshot%20from%202021-11-29%2004-09-52.png)
 
-**3.** Deploy on Google Kubernetes Engine
+**3.** Deploy on Google Kubernetes Engine    
 The `deployment.yaml` file was used as config file for deployment.
 
 Tasks performed during deployment:
