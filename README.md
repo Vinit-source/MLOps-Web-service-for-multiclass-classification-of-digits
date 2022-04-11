@@ -1,6 +1,6 @@
 # Web service for mutliclass digit classification
 
-# Scope
+## Scope
 
 1. Serve SVM and Decision tree models using the flask on separate relative URLs. i.e. `localhost:8000/svm_predict` and `localhost:8000/decision_tree_predict`. (ip could be different than localhost, in your case)
 2. Dockerize the deployment i.e. create dockerfile and build image such that when you do `docker run` (may be with some more flags), the above two links should be accessible via curl. Write `docker_example.sh` shell script that includes the full curl commands.
@@ -15,6 +15,13 @@
 
 3. Deploy on Google Kubernetes Engine
 The `deployment.yaml` file was used as config file for deployment.
-![deployed](kubernetes/Screenshot%20from%202022-04-11 17-04-07.png)
 
-The results and experiments performed during deployment can be found in [`kubernetes/deployment_results.txt`](kubernetes/deployment_results.txt)
+The results and experiments performed during deployment can be found in [`kubernetes/deployment_results.txt`](kubernetes/deployment_results.txt)    
+
+Specifically,    
+![result](kubernetes/Screenshot%20from%202022-04-11%2021-26-21.png)
+
+Accessible from external-IP:    
+![deployed](kubernetes/Screenshot%20from%202022-04-11%2017-04-07.png)
+
+
