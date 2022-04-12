@@ -1,16 +1,17 @@
-gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ gcloud config set project mlops-deployment-kube
+# Set project-id into gcloud config
+gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits$ gcloud config set project mlops-deployment-kube
 
-
+# Save project id for future use
 gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ export PROJECT_ID=mlops-deployment-kube
 
-
+# create a repository in artifact registry to store docker image
 gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ gcloud artifacts repositories create docker-repo    --repository-format=docker    --location=us-central1    --description="Docker repository"
 Create request issued for: [docker-repo]
 Waiting for operation [projects/mlops-deployment-kube/locations/us-central1/operations/94e598b4-3067-4a1c-
 a3fd-ff7e33e3e0c5] to complete...done.                                                                    
 Created repository [docker-repo].
 
-
+# get details of all the repositories in artifact registry
 gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ gcloud artifacts repositories list
 Listing items under project mlops-deployment-kube, across all locations.
 ARTIFACT_REGISTRY
@@ -24,20 +25,20 @@ ENCRYPTION: Google-managed key
 CREATE_TIME: 2022-04-08T13:58:21
 UPDATE_TIME: 2022-04-08T13:58:21
 
-
+# Build docker image using structured name and tag following gcloud convention
 gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ docker build -t us-central1-docker.pkg.dev/${PROJECT_ID}/docker-repo/mlops-app:v1 -f docker/Dockerfile .
 # Truncated output
 Successfully built 9a9a4e9ac739
 Successfully tagged us-central1-docker.pkg.dev/mlops-deployment-kube/docker-repo/mlops-app:v1
 
-
+# list docker images
 gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ docker images
 REPOSITORY                                                              TAG       IMAGE ID       CREATED              SIZE
 us-central1-docker.pkg.dev/mlops-deployment-kube/docker-repo/mlops-app   v1        9a9a4e9ac739   About a minute ago   862MB
 <none>                                                                  <none>    14c1e364c2f8   2 hours ago          858MB
 ubuntu                                                                  18.04     f5cbed4244ba   2 days ago           63.2MB
 
-
+# Authenticate docker to Artifact-Registry
 gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ gcloud auth configure-docker us-central1-docker.pkg.dev
 WARNING: Your config file at [/home/gore_1/.docker/config.json] contains these credential helper entries:
 
@@ -73,9 +74,22 @@ Do you want to continue (Y/n)?  Y
 Docker configuration file updated
 
 
+# Push the Docker image that you just built to the repository:
+gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ docker push us-central1-docker.pkg.dev/${PROJECT_ID}/docker-repo/mlops-app:v1
+The push refers to repository [us-central1-docker.pkg.dev/mlops-deployment-kube/docker-repo/mlops-app]
+b3550f769f5a: Pushed 
+7170a4b6d08a: Pushed 
+0270d8615749: Pushed 
+3bb53c015a91: Pushed 
+1f9a9f77d148: Pushed 
+beb636139810: Pushed 
+95c443da13bf: Pushed 
+v1: digest: sha256:2189622560889241a5233c21ea533cfaf8c7b52d4bfc32f0efffef6152716718 size: 1787
+
+
 # Deploy on Kubernetes
 
-# 1. Create Kubernetes cluster using GUI
+# 1. Create Kubernetes cluster using GUI. This operation takes time.
 # OR
 # Create using shell
 gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ gcloud container clusters create cluster-1 --zone us-central1-c
@@ -89,59 +103,17 @@ kubeconfig entry generated for cluster-1.
 gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ kubectl create deployment mlops-deployment --image=us-central1-docker.pkg.dev/mlops-deployment-kube/docker-repo/mlops-app:v1
 deployment.apps/mlops-deployment created
 
-
-gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ kubectl get deployment
-NAME               READY   UP-TO-DATE   AVAILABLE   AGE
-mlops-deployment   0/1     1            0           15s
-
-
-gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ kubectl get deployment --watch
-NAME               READY   UP-TO-DATE   AVAILABLE   AGE
-mlops-deployment   0/1     1            0           23s 
-
-# Not working. Backtrack. Image not pushed.
-
-# Authenticate docker to Artifact-Registry
-gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ gcloud auth configure-docker us-central1-docker.pkg.dev
-WARNING: Your config file at [/home/gore_1/.docker/config.json] contains these credential helper entries:
-
-{
-  "credHelpers": {
-    "gcr.io": "gcloud",
-    "us.gcr.io": "gcloud",
-    "eu.gcr.io": "gcloud",
-    "asia.gcr.io": "gcloud",
-    "staging-k8s.gcr.io": "gcloud",
-    "marketplace.gcr.io": "gcloud",
-    "asia-south2-docker.pkg.dev": "gcloud",
-    "us-central1-docker.pkg.dev": "gcloud"
-  }
-}
-Adding credentials for: us-central1-docker.pkg.dev
-gcloud credential helpers already registered correctly.
-
-# Push the Docker image that you just built to the repository:
-gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ docker push us-central1-docker.pkg.dev/${PROJECT_ID}/docker-repo/mlops-app:v1
-The push refers to repository [us-central1-docker.pkg.dev/mlops-deployment-kube/docker-repo/mlops-app]
-b3550f769f5a: Pushed 
-7170a4b6d08a: Pushed 
-0270d8615749: Pushed 
-3bb53c015a91: Pushed 
-1f9a9f77d148: Pushed 
-beb636139810: Pushed 
-95c443da13bf: Pushed 
-v1: digest: sha256:2189622560889241a5233c21ea533cfaf8c7b52d4bfc32f0efffef6152716718 size: 1787
-
-gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ kubectl get pods
-NAME                                READY   STATUS             RESTARTS   AGE
-mlops-deployment-74697c9c46-6mxqm   0/1     CrashLoopBackOff   5          4m21s
-
-
+# get deploymnet details - showing not ready because of some error
 gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ kubectl get deployment
 NAME               READY   UP-TO-DATE   AVAILABLE   AGE
 mlops-deployment   0/1     1            0           4m25s
 
+# get the details of individual containers running on k8s Pods
+gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ kubectl get pods
+NAME                                READY   STATUS             RESTARTS   AGE
+mlops-deployment-74697c9c46-6mxqm   0/1     CrashLoopBackOff   5          4m21s
 
+# Debug error using describe
 gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ kubectl describe pod mlops-deployment-74697c9c46-6mxqm
 Name:         mlops-deployment-74697c9c46-6mxqm
 Namespace:    default
@@ -201,6 +173,7 @@ Events:
   Normal   Started    3m45s (x5 over 5m17s)  kubelet            Started container mlops-app
   Warning  BackOff    11s (x24 over 5m15s)   kubelet            Back-off restarting failed container
   
+# Check logs of individual pod to find runtime error
 gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ kubectl logs nginx-1-d987b566b-cr85c --tail 10
   File "/usr/local/lib/python3.6/dist-packages/click/core.py", line 1034, in main
     _verify_python_env()
@@ -212,9 +185,11 @@ This system supports the C.UTF-8 locale which is recommended. You might be able 
 
     export LC_ALL=C.UTF-8
     export LANG=C.UTF-8
-    
-# Then I created deployment using GUI. Kubernetes -> Workloads -> Deploy
-# Followed the steps. Added 3 env variables:
+
+# Create deployment using GUI
+# Then I created deployment named "nginx-1" using GUI. Kubernetes -> Workloads -> Deploy
+# Followed the steps. Replicas set to 3.
+# Added 3 env variables:
 # LC_ALL: C.UTF-8
 # LANG: C.UTF-8
 # FLASK_APP: /exp/api/app.py
@@ -223,17 +198,18 @@ gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (m
 NAME      READY   UP-TO-DATE   AVAILABLE   AGE
 nginx-1   3/3     3            3           3m35s
 The deployment is ready.
-gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ kubectl expose deployment mlops-deployment --type=LoadBalancer --port=8080
-Error from server (NotFound): deployments.apps "mlops-deployment" not found
+
+# k8s service to expose deployment over Internet. The External-IP is the static IP assigned to the group of pods accessible from Internet.
 gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ kubectl expose deployment nginx-1 --type=LoadBalancer --port=8080
 service/nginx-1 exposed
-gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ kubectl get servicesNAME         TYPE           CLUSTER-IP    EXTERNAL-IP   PORT(S)          AGE
+gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ kubectl get services
+NAME         TYPE           CLUSTER-IP    EXTERNAL-IP   PORT(S)          AGE
 kubernetes   ClusterIP      10.8.0.1      <none>        443/TCP          71m
 nginx-1      LoadBalancer   10.8.10.234   <pending>     8080:32025/TCP   14s
 
-# Exposed port needs to be changed.
+# Wrong port given. Port 5000 to be exposed.
 
-# Create deployment using a yaml config file
+# Create deployment using a yaml config file. Refer https://github.com/Vinit-source/MLOps-Web-service-for-multiclass-classification-of-digits/blob/main/deployment.yaml
 gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ kubectl apply -f deployment.yaml
 deployment.apps/mlops-deployment created
 
@@ -247,7 +223,8 @@ mlops-deployment-7bf6748554-7q7k2   1/1     Running   0          29s
 mlops-deployment-7bf6748554-mlzxm   1/1     Running   0          29s
 mlops-deployment-7bf6748554-sw7dt   1/1     Running   0          29s
 
-gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ kubectl expose deployment mlops-deployment --type=LoadBalancer --port=5kubectl expose deployment mlops-deployment --type=LoadBalancer --port=5000
+# Expose working deployment
+gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ kubectl expose deployment mlops-deployment --type=LoadBalancer --port=5000
 service/mlops-deployment exposed
 
 # Service for deployment created.
@@ -280,7 +257,7 @@ gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (m
 deployment.apps/mlops-deployment scaled
 
 
-# resize cluster size from 3 to 2
+# resize cluster size to 2. This operation takes time like cluster creation since hardware is involved.
 gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ gcloud container clusters resize cluster-1 --node-pool default-pool --num-nodes=2 --zone=us-central1-c
 Pool [default-pool] for [cluster-1] will be resized to 2.
 
@@ -305,7 +282,7 @@ MACHINE_TYPE: e2-medium
 DISK_SIZE_GB: 100
 NODE_VERSION: 1.21.6-gke.1503
 
-# 3 pods running on 2 nodes
+# 3 pods running on 2 nodes. Replicaset changed.
 gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ kubectl get pods -o wide
 NAME                                READY   STATUS    RESTARTS   AGE     IP          NODE                                       NOMINATED NODE   READINESS GATES
 mlops-deployment-68f46c58cf-cp56v   1/1     Running   0          3m17s   10.4.2.13   gke-cluster-1-default-pool-c112bea2-4j19   <none>           <none>
@@ -322,14 +299,14 @@ NAME               TYPE           CLUSTER-IP   EXTERNAL-IP     PORT(S)          
 kubernetes         ClusterIP      10.8.0.1     <none>          443/TCP          2d23h
 mlops-deployment   LoadBalancer   10.8.3.41    34.71.214.205   5000:31454/TCP   158m
 
-# new replicaset got created on the deployment of new image
+# replicaset remain same
 gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ kubectl get replicasets
 
 NAME                          DESIRED   CURRENT   READY   AGE
 mlops-deployment-68f46c58cf   3         3         3       62s
 mlops-deployment-7bf6748554   0         0         0       160m
 
-# Previous pods still terminating
+# some pods changed. pods before manual scaling getting terminated
 gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ kubectl get pods
 NAME                                READY   STATUS        RESTARTS   AGE
 mlops-deployment-68f46c58cf-g698x   1/1     Running       0          36s
@@ -342,7 +319,7 @@ mlops-deployment-7bf6748554-sw7dt   0/1     Terminating   0          160m
 gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ kubectl scale deployment mlops-deployment --replicas=1
 deployment.apps/mlops-deployment scaled
 
-# number of replicas reduced for latest
+# number of replicas reduced for both
 gore_1@cloudshell:~/MLOps-Web-service-for-multiclass-classification-of-digits (mlops-deployment-kube)$ kubectl get replicasets
 NAME                          DESIRED   CURRENT   READY   AGE
 mlops-deployment-68f46c58cf   1         1         1       2m21s
